@@ -1,2 +1,2 @@
 # Autosplitters
-Autosplitters for the program livesplit
+Autosplitters for the program LiveSplit
