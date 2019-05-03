@@ -1,8 +1,21 @@
 state("kl2") 
 {
-	bool startedLoading : 0x00B18C60; // True when loading starts. Flicks between true and false at the end of a level load, so terrible in co-op, if alt-tabbed, or waiting for dialogue to finish.
-	string80 loadingLevelWav : 0x010F3824; // Gives you the name of the level (actually, a wav file relating to the level) about 50% of the way through a load. Clears immediately on level start.
-	// So essentially I use startedLoading for the start of the load and loadingLevelWav for the end of one.
+	byte loadingScreenVisible : 0x00B64638; // True whenever there is a loading screen. Sometimes when alt-tabbed, will switch itself to 0.
+	string80 loadingLevelWav : 0x010F3824; // Gives you the name of the level (actually, a wav file relating to the level) about 50% of the way through a load. Clears when loading is finished.
+	byte cutsceneCandidate : 0x0116B3C6; // 0 when a cutscene is not playing, 2 when there is.
+}
+
+init 
+{
+	Func<bool> isLoading = () => current.loadingScreenVisible == 1;
+	Func<bool> wasLoading = () => old.loadingScreenVisible == 1;
+	Func<bool> startedLoading = () => isLoading() && !wasLoading();
+	Func<bool> stoppedLoading = () => !isLoading() && wasLoading();
+	
+	vars.IsLoading = isLoading;
+	vars.WasLoading = wasLoading;
+	vars.StartedLoading = startedLoading;
+	vars.StoppedLoading = stoppedLoading;
 }
 
 startup 
@@ -12,8 +25,7 @@ startup
 
 isLoading 
 {
-	// Covers all loading cases.
-	return current.startedLoading || current.loadingLevelWav.StartsWith("SCENES");
+	return vars.IsLoading();// || vars.InCutscene();
 }
 
 start
@@ -25,7 +37,7 @@ start
 split
 {
 	// The extra condition on the end is to prevent weirdness somewhere. I've forgotten.
-	return current.startedLoading && !old.startedLoading && !current.loadingLevelWav.StartsWith("SCENES");
+	return vars.StartedLoading();
 }
 
 reset
@@ -33,4 +45,3 @@ reset
 	// Intro scene flash-forward... flash-present?
 	return current.loadingLevelWav.StartsWith("SCENES\\Locations\\L00");
 }
-
