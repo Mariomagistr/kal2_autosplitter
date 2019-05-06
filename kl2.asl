@@ -5,6 +5,12 @@ state("kl2")
 	byte cutsceneCandidate : 0x0116B3C6; // 0 when a cutscene is not playing, 2 when there is.
 }
 
+startup 
+{
+	settings.Add("pauseCutscenes", false, "Pause timer during cutscenes.");
+	print("Hello, world!");
+}
+
 init 
 {
 	vars.old = old;
@@ -22,11 +28,6 @@ init
 	vars.InCutscene = inCutscene;
 }
 
-startup 
-{
-	print("Hello, world!");
-}
-
 update
 {
 	vars.old = old;
@@ -35,7 +36,7 @@ update
 isLoading 
 {	
 	// We don't want it when we've started loading because then it will cause split{} to not call.
-	return vars.IsLoading() || vars.InCutscene();
+	return vars.IsLoading() || (settings["pauseCutscenes"] && vars.InCutscene());
 }
 
 start
