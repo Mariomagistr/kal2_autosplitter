@@ -19,40 +19,97 @@ init
 	Func<bool> wasLoading = () => vars.old.loadingScreenVisible == 1; // Old is a new object every time.
 	Func<bool> startedLoading = () => isLoading() && !wasLoading();
 	Func<bool> stoppedLoading = () => !isLoading() && wasLoading();
-	Func<bool> inCutscene = () => current.cutsceneCandidate == 2;
 	
+	
+	Func<bool> inCutscene = () => current.cutsceneCandidate == 2;
+	Func<bool> wasInCutscene = () => vars.old.cutsceneCandidate != 2;
+	Func<bool> beganCutscene = () => inCutscene() && !wasInCutscene();
+	Func<bool> finishedCutscene = () => !inCutscene() && wasInCutscene();
+	
+	bool startPrimed = false;
+	
+	Action tryPrimeStart = () => {
+		if (!startPrimed) {
+			startPrimed = vars.old.loadingLevelWav.StartsWith("SCENES\\Locations\\L01") && !current.loadingLevelWav.StartsWith("SCENES\\Locations\\L01");
+		}
+	};
+	
+	Func<bool> tryFireStart = () => {
+		if (startPrimed && finishedCutscene()) {
+			startPrimed = false;
+			print("Run started, good luck!");
+			return true;
+		} else {
+			return false;
+		}
+	};
+	
+	bool endingPrimed = false;
+	
+	Action tryPrimeEnd = () => {
+		if (!endingPrimed) {
+			endingPrimed = vars.old.loadingLevelWav.StartsWith("SCENES\\Locations\\L11") && !current.loadingLevelWav.StartsWith("SCENES\\Locations\\L11");
+			if (endingPrimed) print("You're almost there, try not to crash...");
+		}
+	};
+	
+	Func<bool> tryFireEnd = () => {
+		if (endingPrimed && beganCutscene()) {
+			endingPrimed = false;
+			print("You did it, congrats!");
+			return true;
+		} else {
+			return false;
+		}
+	};
+	
+	Action forceResetPrimes = () => {
+		startPrimed = false;
+		endingPrimed = false;
+	};
+
 	vars.IsLoading = isLoading;
 	vars.WasLoading = wasLoading;
 	vars.StartedLoading = startedLoading;
-	vars.StoppedLoading = stoppedLoading;
 	vars.InCutscene = inCutscene;
+	vars.BeganCutscene = beganCutscene;
+	vars.TryPrimeStart = tryPrimeStart;
+	vars.TryFireStart = tryFireStart;
+	vars.TryPrimeEnd = tryPrimeEnd;
+	vars.TryFireEnd = tryFireEnd;
+	vars.ForceResetPrimes = forceResetPrimes;
 }
 
 update
 {
 	vars.old = old;
+	vars.TryPrimeStart();
+	vars.TryPrimeEnd();
 }
 
 isLoading 
 {	
-	// We don't want it when we've started loading because then it will cause split{} to not call.
 	return vars.IsLoading() || (settings["pauseCutscenes"] && vars.InCutscene());
 }
 
 start
 {
-	// May be nessessary to add '&& !current.startedLoading' because of timing.
-	return old.loadingLevelWav.StartsWith("SCENES\\Locations\\L01") && !current.loadingLevelWav.StartsWith("SCENES\\Locations\\L01");
+	return vars.TryFireStart();
 }
 
 split
 {
 	// The extra condition on the end is to prevent weirdness somewhere. I've forgotten.
-	return vars.StartedLoading();
+	return vars.StartedLoading() || vars.TryFireEnd();
 }
 
 reset
 {
 	// Intro scene flash-forward... flash-present?
-	return current.loadingLevelWav.StartsWith("SCENES\\Locations\\L00");
+	if (current.loadingLevelWav.StartsWith("SCENES\\Locations\\L00")) {
+		vars.ForceResetPrimes();
+		return true;
+	} else {
+		return false;
+	}
 }
