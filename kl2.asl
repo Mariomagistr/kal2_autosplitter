@@ -24,8 +24,9 @@ startup
 }
 
 isLoading 
-{
-	return vars.IsLoading();// || vars.InCutscene();
+{	
+	// We don't want it when we've started loading because then it will cause split{} to not call.
+	return vars.IsLoading() && !vars.startedLoading();
 }
 
 start
