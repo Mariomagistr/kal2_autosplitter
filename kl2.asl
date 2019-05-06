@@ -7,15 +7,19 @@ state("kl2")
 
 init 
 {
-	Func<bool> isLoading = () => current.loadingScreenVisible == 1;
-	Func<bool> wasLoading = () => old.loadingScreenVisible == 1;
+	vars.old = old;
+
+	Func<bool> isLoading = () => current.loadingScreenVisible == 1; // Current gets updated in place.
+	Func<bool> wasLoading = () => vars.old.loadingScreenVisible == 1; // Old is a new object every time.
 	Func<bool> startedLoading = () => isLoading() && !wasLoading();
 	Func<bool> stoppedLoading = () => !isLoading() && wasLoading();
+	Func<bool> inCutscene = () => current.cutsceneCandidate == 2;
 	
 	vars.IsLoading = isLoading;
 	vars.WasLoading = wasLoading;
 	vars.StartedLoading = startedLoading;
 	vars.StoppedLoading = stoppedLoading;
+	vars.InCutscene = inCutscene;
 }
 
 startup 
@@ -23,10 +27,15 @@ startup
 	print("Hello, world!");
 }
 
+update
+{
+	vars.old = old;
+}
+
 isLoading 
 {	
 	// We don't want it when we've started loading because then it will cause split{} to not call.
-	return vars.IsLoading() && !vars.StartedLoading();
+	return vars.IsLoading() || vars.InCutscene();
 }
 
 start
