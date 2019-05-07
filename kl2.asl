@@ -28,12 +28,14 @@ init
 	
 	bool startPrimed = false;
 	
+	// Prime the ability to start the run when we've loaded into the first real level.
 	Action tryPrimeStart = () => {
 		if (!startPrimed) {
 			startPrimed = vars.old.loadingLevelWav.StartsWith("SCENES\\Locations\\L01") && !current.loadingLevelWav.StartsWith("SCENES\\Locations\\L01");
 		}
 	};
 	
+	// Fire the start condition when the first cutscene finishes and we gain control of the characters.
 	Func<bool> tryFireStart = () => {
 		if (startPrimed && finishedCutscene()) {
 			startPrimed = false;
@@ -46,6 +48,7 @@ init
 	
 	bool endingPrimed = false;
 	
+	// Prime the ability to end the run (split on last segment) when we've loaded into the last level.
 	Action tryPrimeEnd = () => {
 		if (!endingPrimed) {
 			endingPrimed = vars.old.loadingLevelWav.StartsWith("SCENES\\Locations\\L11") && !current.loadingLevelWav.StartsWith("SCENES\\Locations\\L11");
@@ -53,6 +56,7 @@ init
 		}
 	};
 	
+	// Fire the end condition when the last cutscene plays.
 	Func<bool> tryFireEnd = () => {
 		if (endingPrimed && beganCutscene()) {
 			endingPrimed = false;
@@ -63,6 +67,7 @@ init
 		}
 	};
 	
+	// Reset conditions for splitting and starting.
 	Action forceResetPrimes = () => {
 		startPrimed = false;
 		endingPrimed = false;
@@ -99,13 +104,12 @@ start
 
 split
 {
-	// The extra condition on the end is to prevent weirdness somewhere. I've forgotten.
 	return vars.StartedLoading() || vars.TryFireEnd();
 }
 
 reset
 {
-	// Intro scene flash-forward... flash-present?
+	// Intro/title scene
 	if (current.loadingLevelWav.StartsWith("SCENES\\Locations\\L00")) {
 		vars.ForceResetPrimes();
 		return true;
