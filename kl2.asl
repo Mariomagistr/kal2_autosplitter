@@ -9,6 +9,7 @@ startup
 {
 	settings.Add("pauseCutscenes", false, "Pause timer during cutscenes.");
 	print("Hello, world!");
+	vars.lastWav = "";
 }
 
 init 
@@ -99,12 +100,19 @@ isLoading
 
 start
 {
-	return vars.TryFireStart();
+	if (vars.TryFireStart()) {
+		vars.lastWav = "";
+		return true;
+	}
+	return false;
 }
 
 split
 {
-	return vars.StartedLoading() || vars.TryFireEnd();
+	if ((current.loadingScreenVisible == 1 && current.loadingLevelWav.StartsWith("SCENES\\Locations\\L") && current.loadingLevelWav != vars.lastWav && current.loadingLevelWav != "SCENES\\Locations\\L01\\L01_Main.WAV") || vars.TryFireEnd()) {
+		vars.lastWav = current.loadingLevelWav;
+		return true;
+	}
 }
 
 reset
